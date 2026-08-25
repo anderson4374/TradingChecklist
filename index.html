@@ -2188,32 +2188,43 @@ function buildJournalCSV() {
   return { csv: lines.join('\n'), dateStr };
 }
 
+function downloadCSVFile(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Safari needs the object URL to stay alive a moment past the click.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 document.getElementById('exportBtn').addEventListener('click', async () => {
   const { csv, dateStr } = buildJournalCSV();
   const filename = 'MNQ-Journal-' + dateStr + '.csv';
   const blob = new Blob([csv], { type: 'text/csv' });
   const file = new File([blob], filename, { type: 'text/csv' });
 
-  const canUseShare = navigator.canShare && navigator.canShare({ files: [file] });
+  // On iPhone/iPad the share sheet is the only route into the Files app, so prefer
+  // it there. Desktop Safari also reports share support, but its share sheet has no
+  // "save to disk" option — so on any non-touch device, do a normal download.
+  const isTouchDevice = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  const canUseShare = isTouchDevice && navigator.canShare && navigator.canShare({ files: [file] });
 
   if (canUseShare) {
     try {
       await navigator.share({ files: [file], title: 'MNQ Trading Journal \u2014 ' + dateStr });
+      return;
     } catch (e) {
-      // User cancelled the share sheet, or share failed after opening — either way,
-      // don't force a download on top of it. Just stop.
+      // Dismissing the share sheet is a deliberate cancel — don't force a download on top.
+      if (e && e.name === 'AbortError') return;
+      // Anything else means the share genuinely failed, so fall through to a download.
     }
-    return;
   }
 
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  downloadCSVFile(blob, filename);
 });
 
 document.getElementById('newsInput').addEventListener('input', (e) => {
