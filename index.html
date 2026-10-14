@@ -979,7 +979,7 @@ const PREMARKET_ITEMS = [
 ];
 
 const CONDITIONS = [
-  { key: 'zone', label: 'Zone', options: ['15m Floor', '15m Roof', '15m BuyZone', '15m SellZone', '1H Floor', '1H Roof', '1H BuyZone', '1H SellZone', 'None'], cols: 2 },
+  { key: 'zone', label: 'Zone', options: ['15m Floor', '15m Roof', '15m BuyZone', '15m SellZone', '1H Floor', '1H Roof', '1H BuyZone', '1H SellZone', '1H/15m Floor', '1H/15m Roof', '1H/15m BuyZone', '1H/15m SellZone', 'None'], cols: 2 },
   { key: 'sma20', label: 'SMA20', options: ['Near', 'Away'], cols: 2 },
   { key: 'sma200', label: 'SMA200', options: ['Near', 'Away'], cols: 2 },
   { key: 'signal', label: 'Signal', options: ['Tail bar', '180', 'Elephant', 'None'], cols: 2 },
@@ -993,8 +993,8 @@ function arrowLabel(v) {
 }
 
 const ZONE_OPTIONS_BY_DIRECTION = {
-  Up: ['15m Floor', '15m BuyZone', '1H Floor', '1H BuyZone', 'None'],
-  Down: ['15m Roof', '15m SellZone', '1H Roof', '1H SellZone', 'None'],
+  Up: ['15m Floor', '15m BuyZone', '1H Floor', '1H BuyZone', '1H/15m Floor', '1H/15m BuyZone', 'None'],
+  Down: ['15m Roof', '15m SellZone', '1H Roof', '1H SellZone', '1H/15m Roof', '1H/15m SellZone', 'None'],
 };
 
 function optionsFor(c, direction) {
@@ -2046,6 +2046,8 @@ const ZONE_TO_JOURNAL = {
   '15m BuyZone': '15m BZ', '15m SellZone': '15m SZ',
   '1H Floor': '1h Floor', '1H Roof': '1h Roof',
   '1H BuyZone': '1h BZ', '1H SellZone': '1h SZ',
+  '1H/15m Floor': '1h/15m Floor', '1H/15m Roof': '1h/15m Roof',
+  '1H/15m BuyZone': '1h/15m BZ', '1H/15m SellZone': '1h/15m SZ',
   'None': 'None'
 };
 const SIGNAL_TO_JOURNAL = { 'Tail bar': 'Tail', '180': '180', 'Elephant': 'Elephant', 'None': 'None' };
