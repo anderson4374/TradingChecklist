@@ -551,6 +551,14 @@ h1 {
 .rs-result.profit { background: linear-gradient(135deg, #29D398, #1DA97A); color: #032B1E; }
 .rs-result.loss { background: linear-gradient(135deg, #FF4757, #E6294B); color: #3A0510; }
 .resolved-summary.expanded { border-color: rgba(45,225,252,0.55); background: rgba(45,225,252,0.08); }
+/* Minimized trade: the card itself is the single row. */
+.trade-card.collapsed, .extra-trade-card.collapsed { padding: 0; }
+.collapsed .resolved-summary { flex-wrap: nowrap; border: none; background: none; border-radius: 16px; margin: 0; padding: 13px 14px; }
+.rs-left { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.rs-name { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 15px; color: var(--text-primary); white-space: nowrap; }
+.collapsed .rs-chips { flex-wrap: nowrap; gap: 5px; }
+.collapsed .rs-chip { padding: 4px 8px; font-size: 11.5px; white-space: nowrap; }
+.collapsed .rs-result { padding: 4px 10px; flex-shrink: 0; }
 .rs-hint { flex-basis: 100%; text-align: center; font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--accent-teal); }
 .resolved-done-btn {
   margin-top: 12px; padding: 13px 10px; border-radius: 10px; text-align: center;
@@ -1551,7 +1559,7 @@ function renderTradeTrendRow(card, trade, uiKeyPrefix, locked, onChange) {
 // Entry comes from alignment. The app has no way to know whether the exit was
 // respected, so that chip is a one-tap self-report (unset -> yes -> no -> unset).
 // Tapping anywhere else on the row expands the trade so it can be edited.
-function renderResolvedSummaryRow(card, trade, uiKey, onChange, expanded) {
+function renderResolvedSummaryRow(card, trade, uiKey, onChange, expanded, name) {
   const align = computeTradeAlignment(trade);
   const entryState = align === null ? 'na' : (align.aligned ? 'yes' : 'no');
   const exitState = trade.exitRespected === true ? 'yes' : (trade.exitRespected === false ? 'no' : 'na');
@@ -1587,7 +1595,19 @@ function renderResolvedSummaryRow(card, trade, uiKey, onChange, expanded) {
   result.className = 'rs-result ' + (isProfit ? 'profit' : 'loss');
   result.textContent = isProfit ? 'PROFIT' : 'LOSS';
 
-  row.appendChild(chips);
+  if (name) {
+    // Minimized: the trade's name leads the row so the whole trade fits on one line.
+    const left = document.createElement('div');
+    left.className = 'rs-left';
+    const nameEl = document.createElement('span');
+    nameEl.className = 'rs-name';
+    nameEl.textContent = name;
+    left.appendChild(nameEl);
+    left.appendChild(chips);
+    row.appendChild(left);
+  } else {
+    row.appendChild(chips);
+  }
   row.appendChild(result);
   if (expanded) {
     // Same row, same place: tapping it again minimizes the trade.
@@ -1667,6 +1687,17 @@ function renderTrades() {
     const card = document.createElement('div');
     card.className = 'trade-card' + statusClass + (cardAwaiting ? ' awaiting' : '');
 
+    // A resolved trade is minimized to one row: name, entry, exit, result.
+    // Tapping the row opens it again, with its entry items unlocked for edits.
+    const resolvedKey = i + ':resolvedExpanded';
+    const isResolved = trade.outcome !== null;
+    if (isResolved && uiExpanded[resolvedKey] !== true) {
+      card.classList.add('collapsed');
+      renderResolvedSummaryRow(card, trade, resolvedKey, renderTrades, false, 'Trade ' + (i + 1));
+      container.appendChild(card);
+      return;
+    }
+
     const head = document.createElement('div');
     head.className = 'trade-head';
     let badgeClass = '', badgeText = 'NO TRADE';
@@ -1741,19 +1772,11 @@ function renderTrades() {
       return;
     }
 
-    // A resolved trade collapses to a single summary row; tapping it opens the
-    // entry items again, unlocked, so they can be corrected after the fact.
-    const resolvedKey = i + ':resolvedExpanded';
-    const isResolved = trade.outcome !== null;
+    // Reaching here with a resolved trade means it has been expanded for editing.
     const checklistLocked = cardAwaiting;
-
-    if (isResolved && uiExpanded[resolvedKey] !== true) {
-      renderResolvedSummaryRow(card, trade, resolvedKey, renderTrades, false);
-    } else {
-      if (isResolved) renderResolvedSummaryRow(card, trade, resolvedKey, renderTrades, true);
-      renderTradeTrendRow(card, trade, i + '', checklistLocked, renderTrades);
-      renderConditionsInto(card, trade, i + '', checklistLocked, renderTrades);
-    }
+    if (isResolved) renderResolvedSummaryRow(card, trade, resolvedKey, renderTrades, true);
+    renderTradeTrendRow(card, trade, i + '', checklistLocked, renderTrades);
+    renderConditionsInto(card, trade, i + '', checklistLocked, renderTrades);
 
     if (notAligned && trade.outcome === null) {
       const note = document.createElement('div');
@@ -1924,6 +1947,15 @@ function renderExtraTrades() {
     else if (trade.outcome === 'clean') statusClass = ' closed-clean';
     card.className = 'extra-trade-card' + statusClass;
 
+    const resolvedKey = 'extra' + i + ':resolvedExpanded';
+    const isResolved = trade.outcome !== null;
+    if (isResolved && uiExpanded[resolvedKey] !== true) {
+      card.classList.add('collapsed');
+      renderResolvedSummaryRow(card, trade, resolvedKey, renderExtraTrades, false, 'Trade ' + (resolvedOfficialCount + i + 1));
+      container.appendChild(card);
+      return;
+    }
+
     const tag = document.createElement('div');
     tag.className = 'extra-trade-tag';
     tag.textContent = 'OFF-PROTOCOL';
@@ -1980,16 +2012,9 @@ function renderExtraTrades() {
     head.appendChild(badgeSpan);
     card.appendChild(head);
 
-    const resolvedKey = 'extra' + i + ':resolvedExpanded';
-    const isResolved = trade.outcome !== null;
-
-    if (isResolved && uiExpanded[resolvedKey] !== true) {
-      renderResolvedSummaryRow(card, trade, resolvedKey, renderExtraTrades, false);
-    } else {
-      if (isResolved) renderResolvedSummaryRow(card, trade, resolvedKey, renderExtraTrades, true);
-      renderTradeTrendRow(card, trade, 'extra' + i, false, renderExtraTrades);
-      renderConditionsInto(card, trade, 'extra' + i, false, renderExtraTrades);
-    }
+    if (isResolved) renderResolvedSummaryRow(card, trade, resolvedKey, renderExtraTrades, true);
+    renderTradeTrendRow(card, trade, 'extra' + i, false, renderExtraTrades);
+    renderConditionsInto(card, trade, 'extra' + i, false, renderExtraTrades);
 
     if (trade.outcome === null) {
       if (canResolve) {
