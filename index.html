@@ -527,6 +527,30 @@ h1 {
 .resolve-btn.clean-btn { background: linear-gradient(135deg, rgba(41,211,152,0.22), rgba(29,169,122,0.14)); border-color: rgba(41,211,152,0.5); color: var(--text-green); }
 .resolve-btn.awaiting-entry.stop-btn, .resolve-btn.awaiting-entry.clean-btn { background: var(--surface-1); border-color: var(--border-2); color: var(--text-muted); }
 
+.resolved-summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  background: var(--surface-1);
+  border: 1px solid var(--border-2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  cursor: pointer; user-select: none;
+}
+.rs-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.rs-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+  padding: 5px 10px; border-radius: 999px;
+  color: var(--text-muted); background: var(--surface-2); border: 1px solid var(--border-2);
+}
+.rs-chip.tappable { cursor: pointer; }
+.rs-chip.yes { color: var(--text-green); background: rgba(41,211,152,0.12); border-color: rgba(41,211,152,0.45); }
+.rs-chip.no { color: var(--text-red); background: rgba(255,71,87,0.12); border-color: rgba(255,71,87,0.45); }
+.rs-mark { font-weight: 700; }
+.rs-result { font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; padding: 5px 12px; border-radius: 999px; }
+.rs-result.profit { background: linear-gradient(135deg, #29D398, #1DA97A); color: #032B1E; }
+.rs-result.loss { background: linear-gradient(135deg, #FF4757, #E6294B); color: #3A0510; }
+.resolved-edit-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
 .resolved-tag { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; text-align: center; padding: 10px; border-radius: 10px; }
 .resolved-tag.stopped { background: rgba(255,71,87,0.14); color: var(--text-red); border: 1px solid rgba(255,71,87,0.4); }
 .resolved-tag.closed-clean { background: rgba(41,211,152,0.14); color: var(--text-green); border: 1px solid rgba(41,211,152,0.4); }
@@ -1042,6 +1066,7 @@ function freshTrade() {
     targetPoints: '60',
     outcome: null,
     forcedEntry: false,
+    exitRespected: null,
     h1: null,
     m15: null,
     h1Custom: false,
@@ -1513,6 +1538,73 @@ function renderTradeTrendRow(card, trade, uiKeyPrefix, locked, onChange) {
   card.appendChild(row);
 }
 
+// Once a trade is resolved its entry items collapse into this one row: were the
+// entry items respected, was the exit respected, and did it win or lose.
+// Entry comes from alignment. The app has no way to know whether the exit was
+// respected, so that chip is a one-tap self-report (unset -> yes -> no -> unset).
+// Tapping anywhere else on the row expands the trade so it can be edited.
+function renderResolvedSummaryRow(card, trade, uiKey, onChange) {
+  const align = computeTradeAlignment(trade);
+  const entryState = align === null ? 'na' : (align.aligned ? 'yes' : 'no');
+  const exitState = trade.exitRespected === true ? 'yes' : (trade.exitRespected === false ? 'no' : 'na');
+  const mark = (s) => s === 'yes' ? '&#10003;' : (s === 'no' ? '&#10005;' : '&mdash;');
+
+  const row = document.createElement('div');
+  row.className = 'resolved-summary';
+  row.title = 'Tap to edit this trade';
+
+  const chips = document.createElement('div');
+  chips.className = 'rs-chips';
+
+  const entryChip = document.createElement('span');
+  entryChip.className = 'rs-chip ' + entryState;
+  entryChip.innerHTML = 'Entry <span class="rs-mark">' + mark(entryState) + '</span>';
+  chips.appendChild(entryChip);
+
+  const exitChip = document.createElement('span');
+  exitChip.className = 'rs-chip tappable ' + exitState;
+  exitChip.title = 'Tap to mark whether you respected your exit';
+  exitChip.innerHTML = 'Exit <span class="rs-mark">' + mark(exitState) + '</span>';
+  exitChip.addEventListener('click', (e) => {
+    e.stopPropagation();
+    trade.exitRespected = trade.exitRespected === null || trade.exitRespected === undefined ? true
+      : (trade.exitRespected === true ? false : null);
+    saveState();
+    onChange();
+  });
+  chips.appendChild(exitChip);
+
+  const result = document.createElement('span');
+  const isProfit = trade.outcome === 'clean';
+  result.className = 'rs-result ' + (isProfit ? 'profit' : 'loss');
+  result.textContent = isProfit ? 'PROFIT' : 'LOSS';
+
+  row.appendChild(chips);
+  row.appendChild(result);
+  row.addEventListener('click', () => {
+    uiExpanded[uiKey] = true;
+    onChange();
+  });
+  card.appendChild(row);
+}
+
+function renderResolvedEditBar(card, uiKey, onChange) {
+  const bar = document.createElement('div');
+  bar.className = 'resolved-edit-bar';
+  const label = document.createElement('span');
+  label.textContent = 'Editing this trade';
+  const done = document.createElement('span');
+  done.className = 'tt-done-btn';
+  done.textContent = 'Done';
+  done.addEventListener('click', () => {
+    uiExpanded[uiKey] = false;
+    onChange();
+  });
+  bar.appendChild(label);
+  bar.appendChild(done);
+  card.appendChild(bar);
+}
+
 function renderTrades() {
   const container = document.getElementById('trades');
   container.innerHTML = '';
@@ -1639,10 +1731,19 @@ function renderTrades() {
       return;
     }
 
-    const checklistLocked = trade.outcome !== null || cardAwaiting;
+    // A resolved trade collapses to a single summary row; tapping it opens the
+    // entry items again, unlocked, so they can be corrected after the fact.
+    const resolvedKey = i + ':resolvedExpanded';
+    const isResolved = trade.outcome !== null;
+    const checklistLocked = cardAwaiting;
 
-    renderTradeTrendRow(card, trade, i + '', checklistLocked, renderTrades);
-    renderConditionsInto(card, trade, i + '', checklistLocked, renderTrades);
+    if (isResolved && uiExpanded[resolvedKey] !== true) {
+      renderResolvedSummaryRow(card, trade, resolvedKey, renderTrades);
+    } else {
+      if (isResolved) renderResolvedEditBar(card, resolvedKey, renderTrades);
+      renderTradeTrendRow(card, trade, i + '', checklistLocked, renderTrades);
+      renderConditionsInto(card, trade, i + '', checklistLocked, renderTrades);
+    }
 
     if (notAligned && trade.outcome === null) {
       const note = document.createElement('div');
@@ -1865,9 +1966,16 @@ function renderExtraTrades() {
     head.appendChild(badgeSpan);
     card.appendChild(head);
 
-    const checklistLocked = trade.outcome !== null;
-    renderTradeTrendRow(card, trade, 'extra' + i, checklistLocked, renderExtraTrades);
-    renderConditionsInto(card, trade, 'extra' + i, checklistLocked, renderExtraTrades);
+    const resolvedKey = 'extra' + i + ':resolvedExpanded';
+    const isResolved = trade.outcome !== null;
+
+    if (isResolved && uiExpanded[resolvedKey] !== true) {
+      renderResolvedSummaryRow(card, trade, resolvedKey, renderExtraTrades);
+    } else {
+      if (isResolved) renderResolvedEditBar(card, resolvedKey, renderExtraTrades);
+      renderTradeTrendRow(card, trade, 'extra' + i, false, renderExtraTrades);
+      renderConditionsInto(card, trade, 'extra' + i, false, renderExtraTrades);
+    }
 
     if (trade.outcome === null) {
       if (canResolve) {
