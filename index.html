@@ -13,6 +13,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Checklist">
 <meta name="theme-color" content="#0b0e17">
+<!-- Bumped on every change. The running page compares this against the live file to detect a stale copy. -->
+<meta name="app-version" content="2026-10-15.1">
 
 
 
@@ -635,6 +637,30 @@ h1 {
   padding: 4px;
   box-shadow: 0 10px 34px rgba(0,0,0,0.5);
   z-index: 100;
+}
+
+.update-banner {
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 8px 8px 16px;
+  border-radius: 999px;
+  font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 600;
+  color: var(--text-primary);
+  background: var(--tab-bar-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(45,225,252,0.55);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  cursor: pointer; user-select: none; white-space: nowrap;
+}
+.update-banner-btn {
+  padding: 5px 12px; border-radius: 999px;
+  font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 12px;
+  color: #08202B; background: linear-gradient(135deg, #2DE1FC, #1DB8D1);
 }
 
 .floating-clock {
@@ -2492,6 +2518,68 @@ function updateFloatingClock() {
 }
 updateFloatingClock();
 setInterval(updateFloatingClock, 1000);
+
+// ---- Update check ----
+// GitHub Pages lets browsers (and an installed home-screen app) hold on to an old
+// copy of this page for minutes or longer, and the installed app has no address
+// bar to force-refresh from. So the page asks the network for itself, and if the
+// live copy carries a different version it offers a one-tap refresh.
+function currentAppVersion() {
+  const m = document.querySelector('meta[name="app-version"]');
+  return m ? m.getAttribute('content') : null;
+}
+
+function showUpdateBanner() {
+  if (document.getElementById('updateBanner')) return;
+  const bar = document.createElement('div');
+  bar.id = 'updateBanner';
+  bar.className = 'update-banner';
+  bar.innerHTML = '<span>A new version is ready</span><span class="update-banner-btn">Update</span>';
+  bar.addEventListener('click', applyUpdate);
+  document.body.appendChild(bar);
+}
+
+async function applyUpdate() {
+  // cache:'reload' fetches from the network and also replaces the cached copy, so
+  // the reload below (and the next app launch) picks up the new file.
+  try { await fetch(location.pathname, { cache: 'reload' }); } catch (e) {}
+  let alreadyTried = false;
+  try { alreadyTried = sessionStorage.getItem('tc-update-tried') === '1'; } catch (e) {}
+  if (alreadyTried) {
+    // A plain reload didn't take; force a distinct URL so nothing cached can match.
+    location.replace(location.pathname + '?v=' + Date.now());
+    return;
+  }
+  try { sessionStorage.setItem('tc-update-tried', '1'); } catch (e) {}
+  location.reload();
+}
+
+let lastUpdateCheck = 0;
+async function checkForUpdate() {
+  const now = Date.now();
+  if (now - lastUpdateCheck < 30000) return;
+  lastUpdateCheck = now;
+  try {
+    const res = await fetch(location.pathname + '?_=' + now, { cache: 'no-store' });
+    if (!res.ok) return;
+    const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+    const live = doc.querySelector('meta[name="app-version"]');
+    const running = currentAppVersion();
+    if (live && running && live.getAttribute('content') !== running) {
+      showUpdateBanner();
+    } else {
+      try { sessionStorage.removeItem('tc-update-tried'); } catch (e) {}
+    }
+  } catch (e) {
+    // Offline or blocked: stay quiet, the app works as it is.
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') checkForUpdate();
+});
+window.addEventListener('pageshow', checkForUpdate);
+setTimeout(checkForUpdate, 1500);
 
 loadState();
 </script>
