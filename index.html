@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="Checklist">
 <meta name="theme-color" content="#0b0e17">
 <!-- Bumped on every change. The running page compares this against the live file to detect a stale copy. -->
-<meta name="app-version" content="2026-10-16.3">
+<meta name="app-version" content="2026-10-16.4">
 
 
 
@@ -1367,7 +1367,8 @@ function renderConditionsInto(card, trade, uiKeyPrefix, checklistLocked, onChang
         '<span class="cs-left"><span class="step-num">' + (idx + 1) + '</span><span class="cs-name">' + c.label + '</span></span>' +
         '<span class="cs-right">' + dirHtml + '<span class="cs-dot">&middot;</span><span class="cs-value">' + cState.value + '</span></span>';
       summary.addEventListener('click', () => {
-        if (checklistLocked) return;
+        // Not reachable = locked, or an item above it is unanswered (it stays dimmed until then).
+        if (!reachable) return;
         uiExpanded[uiKey] = true;
         onChange();
       });
@@ -1402,10 +1403,7 @@ function renderConditionsInto(card, trade, uiKeyPrefix, checklistLocked, onChang
           cur.value = null;
         }
       }
-      CONDITIONS.slice(idx + 1).forEach(later => {
-        trade[later.key] = freshConditionState();
-        delete uiExpanded[uiKeyPrefix + ':' + later.key];
-      });
+      // Changing one item only changes that item: answers below it are kept.
       if (isItemAnswered(trade, c)) {
         uiExpanded[uiKey] = false;
       }
