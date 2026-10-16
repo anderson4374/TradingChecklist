@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="Checklist">
 <meta name="theme-color" content="#0b0e17">
 <!-- Bumped on every change. The running page compares this against the live file to detect a stale copy. -->
-<meta name="app-version" content="2026-10-15.2">
+<meta name="app-version" content="2026-10-16.1">
 
 
 
@@ -223,41 +223,6 @@ h1 {
   color: var(--text-green);
 }
 
-.trends-card {
-  background: linear-gradient(145deg, var(--card-grad-a), var(--card-grad-b));
-  border: 1px solid var(--border-3);
-  border-left: 4px solid var(--card-border-default);
-  border-radius: 16px;
-  padding: 14px 16px 15px;
-  margin-bottom: 14px;
-  box-shadow: var(--card-shadow);
-  transition: border-left-color 0.3s ease;
-}
-.trends-card.complete { border-left-color: #29D398; }
-.trends-card.locked { opacity: 0.32; pointer-events: none; }
-
-.trend-item { margin-bottom: 10px; }
-.trend-item:last-child { margin-bottom: 0; }
-.trend-item.pending { opacity: 0.4; pointer-events: none; }
-
-.trend-head {
-  display: flex; align-items: center; gap: 8px;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 15px; font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 7px;
-}
-.trend-head .step-num {
-  font-family: 'JetBrains Mono', monospace;
-  width: 19px; height: 19px; border-radius: 6px;
-  background: var(--surface-3);
-  color: var(--text-muted);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 10px;
-  flex-shrink: 0;
-}
-.trend-item.confirmed .trend-head .step-num { background: #2DE1FC; color: #08202B; }
-
 .trend-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 
 .trend-btn {
@@ -278,25 +243,11 @@ h1 {
 .trend-btn.down.selected { background: linear-gradient(135deg, rgba(255,71,87,0.25), rgba(230,41,75,0.16)); border-color: rgba(255,71,87,0.55); color: var(--text-red); font-weight: 700; }
 .trend-btn.neutral.selected { background: linear-gradient(135deg, rgba(255,210,63,0.25), rgba(255,176,32,0.16)); border-color: rgba(255,210,63,0.55); color: var(--text-amber); font-weight: 700; }
 
-.trend-summary {
-  display: flex; justify-content: space-between; align-items: center;
-  cursor: pointer; user-select: none;
-  margin-right: 18px;
-}
-.trend-summary .ts-label { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 9px; flex: 0 0 auto; }
-.trend-summary .ts-label .step-num {
-  font-family: 'JetBrains Mono', monospace;
-  width: 19px; height: 19px; border-radius: 6px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 10px;
-  flex-shrink: 0;
-  background: #2DE1FC; color: #08202B;
-}
-.trend-summary .ts-value { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; flex: 0 0 60px; text-align: left; }
-.trend-summary .ts-value.up { color: var(--text-green); }
-.trend-summary .ts-value.down { color: var(--text-red); }
-.trend-summary .ts-value.neutral { color: var(--text-amber); }
-.ts-right { display: flex; align-items: center; flex: 0 0 176px; }
+/* Trend value shown on a collapsed trend step (same row layout as the entry items). */
+.cs-right .trend-val { flex: 1; text-align: left; font-weight: 700; }
+.cs-right .trend-val.up { color: var(--text-green); }
+.cs-right .trend-val.down { color: var(--text-red); }
+.cs-right .trend-val.neutral { color: var(--text-amber); }
 
 .pm-item {
   display: flex; align-items: center; gap: 12px;
@@ -990,12 +941,8 @@ h1 {
     <div class="section-label">Pre-Market Checklist</div>
     <div class="premarket-card" id="premarketCard"></div>
 
-    <div class="section-label">Trends</div>
-    <div class="premarket-gate-note" id="trendsGateNote" style="display:none;">Complete the pre-market checklist above to unlock trends.</div>
-    <div class="trends-card" id="trendsCard"></div>
-
     <div class="section-label">Entry checklist</div>
-    <div class="premarket-gate-note" id="gateNote" style="display:none;">Complete the pre-market checklist and trends above to unlock trading.</div>
+    <div class="premarket-gate-note" id="gateNote" style="display:none;">Complete the pre-market checklist above to unlock trading.</div>
     <div class="trades-lockwrap" id="tradesLockwrap">
       <div id="trades"></div>
     </div>
@@ -1010,7 +957,7 @@ h1 {
     </div>
 
     <div class="footer-note">
-      Steps unlock in order &mdash; zone, then SMA20, then SMA200, then signal. All 4 must be answered before a trade can proceed, even if alignment is already clear. A trade goes GO when either all 4 entry items agree on direction, or 3 of 4 agree and at least 1 of 2 trends confirms. Each trade must be closed (stopped out or profit) before the next one unlocks. Two stop-outs, anywhere, ends the day. Two profits in a row also ends the day &mdash; on purpose.
+      Every trade starts with the time window. Trade 1 then sets the 1H and 15m trends, which carry over to the other trades. Steps unlock in order &mdash; zone, then SMA20, then SMA200, then signal. All 4 must be answered before a trade can proceed, even if alignment is already clear. A trade goes GO when either all 4 entry items agree on direction, or 3 of 4 agree and at least 1 of 2 trends confirms. Each trade must be closed (stopped out or profit) before the next one unlocks. Two stop-outs, anywhere, ends the day. Two profits in a row also ends the day &mdash; on purpose.
     </div>
 
     <button class="reset-btn" id="resetBtn">Reset for new session</button>
@@ -1321,52 +1268,52 @@ function renderPremarket() {
   });
 }
 
-function trendsComplete() {
-  return TREND_CONDITIONS.every(t => state.trends[t.key] !== null);
-}
-
-function renderTrendCard() {
-  const card = document.getElementById('trendsCard');
-  card.innerHTML = '';
-  const complete = trendsComplete();
-  const premarketDone = premarketComplete();
-  card.className = 'trends-card' + (complete ? ' complete' : '') + (!premarketDone ? ' locked' : '');
-
-  const gateNote = document.getElementById('trendsGateNote');
-  gateNote.style.display = premarketDone ? 'none' : 'block';
-
+// The day's 1H and 15m trends are asked inside Trade 1, right after the session
+// question, and carry over to every other trade (each can still override its own).
+// Rendered with the same look as the entry items below them.
+function renderTrendSteps(card, locked) {
   TREND_CONDITIONS.forEach((t, idx) => {
     const priorConfirmed = TREND_CONDITIONS.slice(0, idx).every(prev => state.trends[prev.key] !== null);
-    const reachable = premarketDone && (idx === 0 || priorConfirmed);
+    const reachable = !locked && (idx === 0 || priorConfirmed);
     const val = state.trends[t.key];
     const isConfirmed = val !== null;
     const uiKey = 'trend:' + t.key;
     const showEditing = !isConfirmed || uiExpanded[uiKey] === true;
 
-    const item = document.createElement('div');
-    item.className = 'trend-item' + (isConfirmed ? ' confirmed' : '') + (!reachable ? ' pending' : '');
+    const block = document.createElement('div');
+    block.className = 'condition-block' + (isConfirmed ? ' confirmed' : '') + (!reachable ? ' pending' : '');
 
     if (isConfirmed && !showEditing) {
       const summary = document.createElement('div');
-      summary.className = 'trend-summary';
-      const valClass = val.toLowerCase();
+      summary.className = 'condition-summary';
       summary.innerHTML =
-        '<span class="ts-label"><span class="step-num">' + (idx + 1) + '</span>' + t.label + '</span>' +
-        '<span class="ts-right"><span class="ts-value ' + valClass + '">' + arrowLabel(val) + '</span></span>';
+        '<span class="cs-left"><span class="cs-name">' + t.label + '</span></span>' +
+        '<span class="cs-right"><span class="trend-val ' + val.toLowerCase() + '">' + arrowLabel(val) + '</span></span>';
       summary.addEventListener('click', () => {
-        if (!premarketDone) return;
+        if (locked) return;
         uiExpanded[uiKey] = true;
-        renderTrendCard();
+        render();
       });
-      item.appendChild(summary);
-      card.appendChild(item);
+      block.appendChild(summary);
+      card.appendChild(block);
       return;
     }
 
-    const head = document.createElement('div');
-    head.className = 'trend-head';
-    head.innerHTML = '<span class="step-num">' + (idx + 1) + '</span><span>' + t.label + '</span>';
-    item.appendChild(head);
+    if (!isConfirmed && !reachable) {
+      const summary = document.createElement('div');
+      summary.className = 'condition-summary condition-summary-pending';
+      summary.innerHTML =
+        '<span class="cs-left"><span class="cs-name">' + t.label + '</span></span>' +
+        '<span class="cs-right"><span class="dir-na">&mdash;</span></span>';
+      block.appendChild(summary);
+      card.appendChild(block);
+      return;
+    }
+
+    const headRow = document.createElement('div');
+    headRow.className = 'condition-head';
+    headRow.innerHTML = '<span>' + t.label + '</span>';
+    block.appendChild(headRow);
 
     const opts = document.createElement('div');
     opts.className = 'trend-options';
@@ -1377,10 +1324,8 @@ function renderTrendCard() {
       btn.addEventListener('click', () => {
         if (!reachable) return;
         state.trends[t.key] = state.trends[t.key] === opt ? null : opt;
-        TREND_CONDITIONS.slice(idx + 1).forEach(later => {
-          state.trends[later.key] = null;
-          delete uiExpanded['trend:' + later.key];
-        });
+        // Trade 1 owns the day-level trend, so it never keeps a private override of it.
+        state.trades[0][t.key + 'Custom'] = false;
         syncAllTrendsFromGlobal();
         if (state.trends[t.key] !== null) {
           uiExpanded[uiKey] = false;
@@ -1390,8 +1335,8 @@ function renderTrendCard() {
       });
       opts.appendChild(btn);
     });
-    item.appendChild(opts);
-    card.appendChild(item);
+    block.appendChild(opts);
+    card.appendChild(block);
   });
 }
 
@@ -1747,7 +1692,7 @@ function renderTrades() {
   const dayLocked = stopLocked || profitLocked;
   const lockReason = stopLocked ? 'stop' : (profitLocked ? 'profit' : null);
 
-  const gateOpen = premarketComplete() && trendsComplete();
+  const gateOpen = premarketComplete();
   document.getElementById('gateNote').style.display = gateOpen ? 'none' : 'block';
   document.getElementById('tradesLockwrap').className = 'trades-lockwrap' + (gateOpen ? '' : ' locked');
 
@@ -1894,11 +1839,25 @@ function renderTrades() {
     }
 
     // Reaching here with a resolved trade means it has been expanded for editing.
-    // Until the session question is answered Yes, the rest of an open trade stays locked.
-    const checklistLocked = cardAwaiting || (!isResolved && !sessionOk);
+    // An open trade runs in order: session question, then the 1H and 15m trends, then
+    // the entry items. Each stays locked until the one before it is answered.
+    const trendsOk = trade.h1 !== null && trade.m15 !== null;
+    const trendsLocked = cardAwaiting || (!isResolved && !sessionOk);
+    const checklistLocked = trendsLocked || (!isResolved && !trendsOk);
     if (isResolved) renderResolvedSummaryRow(card, trade, resolvedKey, renderTrades, true, undefined, true);
     if (!isResolved) renderSessionGate(card, trade, i + ':session', renderTrades);
-    renderTradeTrendRow(card, trade, i + '', checklistLocked, renderTrades);
+    if (i === 0) {
+      // Trade 1 is where the day's trends are chosen; the other trades inherit them.
+      renderTrendSteps(card, trendsLocked);
+    } else {
+      renderTradeTrendRow(card, trade, i + '', trendsLocked, renderTrades);
+      if (!isResolved && sessionOk && !trendsOk) {
+        const hint = document.createElement('div');
+        hint.className = 'session-note trend-hint';
+        hint.textContent = 'Pick the 1H and 15m trends (Edit above) to continue.';
+        card.appendChild(hint);
+      }
+    }
     renderConditionsInto(card, trade, i + '', checklistLocked, renderTrades);
 
     if (notAligned && trade.outcome === null) {
@@ -2284,7 +2243,6 @@ function renderReport() {
 
 function render() {
   renderPremarket();
-  renderTrendCard();
   renderStopStatus();
   renderTrades();
   renderExtraTrades();
