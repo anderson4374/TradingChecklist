@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="Checklist">
 <meta name="theme-color" content="#0b0e17">
 <!-- Bumped on every change. The running page compares this against the live file to detect a stale copy. -->
-<meta name="app-version" content="2026-10-16.1">
+<meta name="app-version" content="2026-10-16.2">
 
 
 
@@ -1455,13 +1455,14 @@ function renderConditionsInto(card, trade, uiKeyPrefix, checklistLocked, onChang
   });
 }
 
-// Compact per-trade trend display/override. Defaults to the day's Trends card
-// value; tapping Edit lets the user set a different 1H/15m trend just for
-// this one trade (e.g. the trend flipped between trade 1 and trade 2).
-function renderTradeTrendRow(card, trade, uiKeyPrefix, locked, onChange) {
+// Compact one-line trend display. On Trades 2 and 3 it shows the day's trends and
+// Edit sets a different 1H/15m trend just for that trade (e.g. the trend flipped
+// between trade 1 and trade 2). With dayLevel (Trade 1) the same row shows the
+// day's trends and Edit changes them for every trade instead.
+function renderTradeTrendRow(card, trade, uiKeyPrefix, locked, onChange, dayLevel) {
   const uiKey = uiKeyPrefix + ':trendOverride';
   const showEditing = !locked && uiExpanded[uiKey] === true;
-  const isCustom = trade.h1Custom || trade.m15Custom;
+  const isCustom = !dayLevel && (trade.h1Custom || trade.m15Custom);
 
   const valHtml = (val) => val
     ? '<span class="tt-val ' + val.toLowerCase() + '">' + arrowLabel(val) + '</span>'
@@ -1506,6 +1507,14 @@ function renderTradeTrendRow(card, trade, uiKeyPrefix, locked, onChange) {
       btn.className = 'trend-btn ' + opt.toLowerCase() + (trade[t.key] === opt ? ' selected' : '');
       btn.innerHTML = arrowLabel(opt);
       btn.addEventListener('click', () => {
+        if (dayLevel) {
+          state.trends[t.key] = opt;
+          trade[t.key + 'Custom'] = false;
+          syncAllTrendsFromGlobal();
+          saveState();
+          render();
+          return;
+        }
         trade[t.key] = opt;
         trade[t.key + 'Custom'] = true;
         saveState();
@@ -1847,8 +1856,13 @@ function renderTrades() {
     if (isResolved) renderResolvedSummaryRow(card, trade, resolvedKey, renderTrades, true, undefined, true);
     if (!isResolved) renderSessionGate(card, trade, i + ':session', renderTrades);
     if (i === 0) {
-      // Trade 1 is where the day's trends are chosen; the other trades inherit them.
-      renderTrendSteps(card, trendsLocked);
+      // Trade 1 is where the day's trends are chosen, step by step. Once both are set
+      // they collapse into the same one-line row the other trades show.
+      if (state.trends.h1 !== null && state.trends.m15 !== null) {
+        renderTradeTrendRow(card, trade, i + '', trendsLocked, renderTrades, true);
+      } else {
+        renderTrendSteps(card, trendsLocked);
+      }
     } else {
       renderTradeTrendRow(card, trade, i + '', trendsLocked, renderTrades);
       if (!isResolved && sessionOk && !trendsOk) {
