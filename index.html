@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="Checklist">
 <meta name="theme-color" content="#0b0e17">
 <!-- Bumped on every change. The running page compares this against the live file to detect a stale copy. -->
-<meta name="app-version" content="2026-10-16.2">
+<meta name="app-version" content="2026-10-16.3">
 
 
 
@@ -521,6 +521,7 @@ h1 {
 .collapsed .rs-chip { padding: 3px 7px; font-size: 11px; gap: 3px; white-space: nowrap; }
 .collapsed .rs-result { padding: 3px 9px; font-size: 11px; flex-shrink: 0; }
 @media (max-width: 380px) {
+  .cs-right .cs-value { font-size: 12px; }
   .trade-name-wrap { gap: 6px; }
   .session-pill { padding: 2px 7px; font-size: 10.5px; }
   .collapsed .resolved-summary { padding: 11px 8px 11px 10px; gap: 4px; }
@@ -852,7 +853,7 @@ h1 {
 
 .condition-summary {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   cursor: pointer;
   user-select: none;
@@ -864,7 +865,7 @@ h1 {
 .condition-summary-pending .cs-left { color: var(--text-muted); }
 .condition-summary-pending .cs-left .step-num { background: var(--surface-3); color: var(--text-dim); }
 
-.cs-left { display: flex; align-items: center; gap: 9px; font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; color: var(--text-primary); flex: 0 0 auto; }
+.cs-left { display: flex; align-items: center; gap: 8px; font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: var(--text-primary); flex: 0 0 98px; min-width: 0; white-space: nowrap; }
 .cs-left .step-num {
   font-family: 'JetBrains Mono', monospace;
   width: 22px; height: 22px; border-radius: 6px;
@@ -874,13 +875,13 @@ h1 {
   background: #2DE1FC; color: #08202B;
 }
 
-.cs-right { display: flex; align-items: center; justify-content: flex-start; gap: 0; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; flex: 0 0 176px; }
-.cs-right .dir-up, .cs-right .dir-down, .cs-right .dir-na { flex: 0 0 60px; text-align: left; }
+.cs-right { display: flex; align-items: center; justify-content: flex-start; gap: 0; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; flex: 1 1 auto; min-width: 0; }
+.cs-right .dir-up, .cs-right .dir-down, .cs-right .dir-na { flex: 0 0 52px; text-align: left; }
 .cs-right .dir-na { color: var(--text-dim); font-weight: 400; }
 .cs-right .dir-up { color: var(--text-green); }
 .cs-right .dir-down { color: var(--text-red); }
-.cs-right .cs-dot { flex: 0 0 14px; text-align: center; color: var(--text-muted); }
-.cs-right .cs-value { flex: 1; min-width: 0; text-align: left; color: var(--text-body); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-right .cs-dot { flex: 0 0 8px; text-align: center; color: var(--text-muted); }
+.cs-right .cs-value { flex: 1; min-width: 0; text-align: left; color: var(--text-body); font-weight: 500; line-height: 1.2; }
 
 .price-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
 
